@@ -1369,16 +1369,20 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
    BACKUP & SYNC
 ============================================================ */
 .bk-block { margin-top: 1.15rem; }
-/* The same card as the Live score toggle, outlined in the theme's own green. */
+/* The same card as the Live score toggle, outlined in a quiet green: the
+   theme's own green taken darker, so it sits with the page's muted colours on
+   dark themes and stays readable on light ones. */
 .bk-main { display: flex; align-items: center; justify-content: center; width: 100%; padding: .8rem .95rem;
-    border-radius: 12px; cursor: pointer; font: inherit; text-align: center;
-    border: 1.5px solid var(--live-dot, #34d399); background: var(--bg-card); color: var(--live-dot, #34d399);
+    border-radius: 12px; cursor: pointer; font: inherit; text-align: center; background: var(--bg-card);
+    border: 1.5px solid #20835f; color: #279e73;
+    border-color: color-mix(in srgb, var(--live-dot, #34d399) 62%, #000);
+    color: color-mix(in srgb, var(--live-dot, #34d399) 76%, #000);
     transition: border-color .16s, background .16s, color .16s; }
 .bk-main:hover { background: var(--bg-card-hover);
-    background: color-mix(in srgb, var(--live-dot, #34d399) 12%, var(--bg-card)); }
+    border-color: color-mix(in srgb, var(--live-dot, #34d399) 80%, #000);
+    color: color-mix(in srgb, var(--live-dot, #34d399) 90%, #000); }
 .bk-main .bk-title { font-size: .92rem; font-weight: 700; }
 .bk-note b { color: var(--text-main); }
-.bk-sub { font-size: .72rem; line-height: 1.4; color: var(--text-muted); margin: .45rem .15rem 0; }
 .bk-sync-line { display: flex; align-items: center; gap: 7px; margin: .6rem .15rem 0; padding: 0;
     background: none; border: 0; font: inherit; font-size: .74rem; color: var(--text-muted);
     cursor: pointer; text-align: left; }
@@ -1424,6 +1428,28 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
     background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);
     box-shadow: 0 14px 40px rgba(0,0,0,.4); transition: transform .28s ease, opacity .28s ease; }
 #bk-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+/* Newer progress from another device: stays until it is acted on. */
+#sync-prompt { position: fixed; left: 50%; bottom: 22px; z-index: 615; display: flex; align-items: center; gap: 10px;
+    max-width: calc(100vw - 2rem); padding: .55rem .6rem .55rem 1rem; border-radius: 12px;
+    font-size: .85rem; font-weight: 600; background: var(--bg-card); color: var(--text-main);
+    border: 1px solid var(--border-color); box-shadow: 0 14px 40px rgba(0,0,0,.4);
+    transform: translateX(-50%) translateY(160%); opacity: 0; pointer-events: none;
+    transition: transform .28s ease, opacity .28s ease; }
+#sync-prompt.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+#sync-prompt .sp-go { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px;
+    border: 0; border-radius: 8px; background: #22c55e; color: #fff; font: inherit; font-size: .76rem;
+    font-weight: 700; cursor: pointer; white-space: nowrap; animation: sp-pulse 2s infinite; }
+#sync-prompt .sp-go:hover { opacity: .9; }
+#sync-prompt .sp-x { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border-color);
+    background: transparent; color: var(--text-muted); font: inherit; font-size: .74rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap; }
+#sync-prompt .sp-x:hover { color: var(--text-main); border-color: var(--text-muted); }
+@keyframes sp-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,.6); }
+    70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+/* the brief notices move up out of its way */
+body.sync-prompting #pad-toast, body.sync-prompting #bk-toast { bottom: 84px; }
 </style>
 </head>
 
@@ -1751,7 +1777,6 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
                         <button class="bk-main" id="bk-open" onclick="bkOpen()" title="Save a backup file, restore one, or sync your progress across devices">
                             <span class="bk-title">Backup / Restore / Auto-Sync Progress</span>
                         </button>
-                        <div class="bk-sub">Saves a small backup file to prevent quiz data from being lost. The file can also be used to continue on another device.</div>
                         <button class="bk-sync-line" id="bk-sync-line" onclick="bkOpen('sync')" title="Sync your progress across devices automatically"><span class="bk-dot" aria-hidden="true"></span><span class="bk-sync-text">Auto-sync is off</span></button>
                     </div>
                 </div>
@@ -5963,28 +5988,11 @@ padSyncSettings();
             <button class="pad-close" onclick="bkClose()" aria-label="Close">&#10005;</button>
         </div>
         <div class="pad-body">
-            <div class="bk-sec">
-                <div class="bk-h">Backup file</div>
-                <div class="bk-btns">
-                    <button class="bk-btn bk-acc" id="bk-save" onclick="bkSave()">&#11015; Save backup file</button>
-                    <button class="bk-btn" id="bk-restore" onclick="bkPick()">&#11014; Restore from file</button>
-                    <input type="file" id="bk-file" hidden onchange="bkRead(this)">
-                </div>
-                <p class="bk-note" id="bk-last"></p>
-                <div class="bk-confirm" id="bk-confirm" hidden>
-                    <div id="bk-confirm-text"></div>
-                    <div class="bk-btns">
-                        <button class="bk-btn bk-danger" id="bk-apply" onclick="bkApply()">Replace</button>
-                        <button class="bk-btn" onclick="bkCancel()">Cancel</button>
-                    </div>
-                </div>
-                <p class="bk-msg" id="bk-msg" role="status"></p>
-            </div>
             <div class="bk-sec" id="bk-sync">
                 <div class="bk-h">Auto-sync</div>
+                <p class="bk-note" id="sync-about" style="margin-top:0">Turn this on to auto-save as you work. Copy the code to another device to link it and continue your progression.</p>
                 <div id="sync-off">
-                    <p class="bk-note" style="margin-top:0">Turn this on so you don't need to save backups by hand. Your progress saves online as you go.</p>
-                    <div class="bk-btns" style="margin-top:.7rem">
+                    <div class="bk-btns" style="margin-top:.8rem">
                         <button class="bk-btn bk-acc" id="sync-create" onclick="syncCreate()">Turn on sync</button>
                     </div>
                     <label class="bk-lab" for="sync-code-in">Already have a code? Enter it to restore your progress or continue from another device.</label>
@@ -5994,7 +6002,7 @@ padSyncSettings();
                     </div>
                 </div>
                 <div id="sync-on" hidden>
-                    <label class="bk-lab" for="sync-code-out" style="margin-top:0">Your sync code</label>
+                    <label class="bk-lab" for="sync-code-out">Your sync code</label>
                     <div class="bk-btns">
                         <input id="sync-code-out" class="bk-in" readonly>
                         <button class="bk-btn" onclick="syncCopy()">Copy</button>
@@ -6008,8 +6016,31 @@ padSyncSettings();
                 </div>
                 <p class="bk-msg" id="sync-msg" role="status"></p>
             </div>
+            <div class="bk-sec">
+                <div class="bk-h">Backup file</div>
+                <div class="bk-btns">
+                    <button class="bk-btn" id="bk-save" onclick="bkSave()">&#11015; Save backup file</button>
+                    <button class="bk-btn" id="bk-restore" onclick="bkPick()">&#11014; Restore from file</button>
+                    <input type="file" id="bk-file" hidden onchange="bkRead(this)">
+                </div>
+                <p class="bk-note" id="bk-last"></p>
+                <div class="bk-confirm" id="bk-confirm" hidden>
+                    <div id="bk-confirm-text"></div>
+                    <div class="bk-btns">
+                        <button class="bk-btn bk-danger" id="bk-apply" onclick="bkApply()">Replace</button>
+                        <button class="bk-btn" onclick="bkCancel()">Cancel</button>
+                    </div>
+                </div>
+                <p class="bk-msg" id="bk-msg" role="status"></p>
+                <p class="bk-note" id="bk-about">Manually save a small backup file to prevent quiz data from being lost. Unnecessary if you turn on sync and save the code.</p>
+            </div>
         </div>
     </div>
+</div>
+<div id="sync-prompt" role="status" aria-live="polite">
+    <span>Newer progress from your other device</span>
+    <button class="sp-go" id="sync-refresh" onclick="syncApply()" title="Reload the page to show it">&#10024; Refresh</button>
+    <button class="sp-x" id="sync-dismiss" onclick="syncDismiss()" title="Hide this. The page catches up the next time it is opened.">Dismiss</button>
 </div>
 <script id="sync-script">
 /* ============================================================
@@ -6023,13 +6054,15 @@ padSyncSettings();
    answers in memory and writes them back whole, so storage must never be
    changed underneath a page that is still running.
 
-   Sync: every change is sent a few seconds after things go quiet (and at
-   once when the tab is hidden); the server's copy is fetched on load and
-   whenever the tab comes back. The server only accepts a save made from the
-   revision it holds, so two devices cannot overwrite each other: the loser
-   gets the current copy, combines, and sends again. Combining keeps this
-   device's page and merges the record of what has been answered, so nothing
-   answered anywhere is lost.
+   Sync: changes go up at most once a minute, and at once when the tab is
+   hidden. The server's copy is fetched when the page opens, when the tab or
+   window comes back, and on the first click after a couple of minutes away.
+   Newer progress found as the page opens is simply put in place. Found while
+   the page is in use, it is held, and a Refresh button offered; meanwhile
+   this device's work goes up combined with it, so dismissing the button
+   loses nothing. The server only accepts a save made from the revision it
+   holds, so two devices can never overwrite each other. Combining keeps this
+   device's page and merges the record of what was answered, missed and chosen.
 ============================================================ */
 const BK_QUIZ = QUIZ_ID;
 const BK_PREFIX = 'q_' + QUIZ_ID + '_';
@@ -6234,6 +6267,8 @@ function syncShow(id) { return 'bnb-' + id.slice(4).match(/.{1,5}/g).join('-'); 
 
 /* ------------------------------------------- sync: noticing a change */
 let syncTimer = null, syncBusy = false, syncAgain = false, syncPulledAt = 0;
+/* Newer progress from another device, held until the page is refreshed. */
+let syncRemote = null, syncPromptDismissed = false, syncActiveAt = Date.now();
 (function () {
     const P = Storage.prototype, set = P.setItem, rem = P.removeItem, clr = P.clear;
     function isLocal(store) { try { return store === window.localStorage; } catch (e) { return false; } }
@@ -6291,6 +6326,57 @@ function syncMerge(base, other) {
     return out;
 }
 
+/* What this device should hold, given a newer copy from the server: that copy
+   as it is if nothing has changed here since the last sync, otherwise the two
+   combined, keeping this device's page. */
+function syncNext(local, remote) {
+    return bkHash(bkCanon(local)) !== syncMeta().hash ? syncMerge(local, remote) : remote;
+}
+
+/* The server has a copy this page has not seen. If taking it would change
+   nothing here, just note it; otherwise hold it and offer a refresh. Says
+   whether something is now being held. */
+function syncNotice(data) {
+    const remote = (data && data.state && typeof data.state === 'object' && !Array.isArray(data.state))
+                 ? data.state : null;
+    const rev = (data && data.rev) || 0;
+    if (!remote) {                          // nothing up there (a new code, or cleared): ours goes up
+        syncRemote = null; syncSetMeta({ rev: 0, hash: '' }); syncPromptUI();
+        return false;
+    }
+    const local = bkSnapshot();
+    if (bkCanon(syncNext(local, remote)) === bkCanon(local)) {
+        syncRemote = null; syncSetMeta({ rev: rev, hash: bkHash(bkCanon(remote)) }); syncPromptUI();
+        return false;
+    }
+    if (!syncRemote || syncRemote.rev !== rev) syncPromptDismissed = false;   // something new: ask again
+    syncRemote = { rev: rev, state: remote };
+    syncPromptUI();
+    return true;
+}
+
+/* Refresh: put the held copy in place and reload, so the page's own start-up
+   shows it. */
+function syncApply() {
+    if (syncRemote) {
+        const next = syncNext(bkSnapshot(), syncRemote.state);
+        const meta = { rev: syncRemote.rev, hash: bkHash(bkCanon(syncRemote.state)) };
+        try { bkWrite(next); }
+        catch (e) { bkToast("Couldn't update: this browser is out of storage space."); return; }
+        syncSetMeta(meta);
+        syncRemote = null;
+        bkAfterReload('Progress updated from your other device.');
+    }
+    location.reload();
+}
+function syncDismiss() { syncPromptDismissed = true; syncPromptUI(); }
+function syncPromptUI() {
+    const show = !!(syncRemote && !syncPromptDismissed && syncCfg());
+    const p = document.getElementById('sync-prompt');
+    if (p) p.classList.toggle('show', show);
+    if (document.body) document.body.classList.toggle('sync-prompting', show);
+}
+
 async function syncPush(opts) {
     opts = opts || {};
     const cfg = syncCfg();
@@ -6298,25 +6384,31 @@ async function syncPush(opts) {
     if (syncBusy) { syncAgain = true; return; }
     clearTimeout(syncTimer); syncTimer = null;
     syncBusy = true; syncUI();
-    let combined = false;
     try {
         for (let attempt = 0; attempt < 4; attempt++) {
-            const state = bkSnapshot(), h = bkHash(bkCanon(state)), m = syncMeta();
-            if (h === m.hash) break;                                  // nothing new to send
-            const body = JSON.stringify({ id: cfg.id, quiz: BK_QUIZ, baseRev: m.rev || 0, state: state });
+            const local = bkSnapshot(), m = syncMeta();
+            /* With newer progress held, what goes up is this device's work
+               combined with it - never this device's older copy over it. */
+            const state = syncRemote ? syncNext(local, syncRemote.state) : local;
+            const canon = bkCanon(state);
+            if (syncRemote ? canon === bkCanon(syncRemote.state) : bkHash(canon) === m.hash) break;
+            const body = JSON.stringify({ id: cfg.id, quiz: BK_QUIZ,
+                                          baseRev: syncRemote ? syncRemote.rev : (m.rev || 0), state: state });
             const r = await fetch(syncApi(), {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: body,
                 keepalive: !!opts.leaving && body.length < 60000 });
             const data = await r.json().catch(() => ({}));
             if (r.status === 409) {
-                /* Saved elsewhere first. On the way out there is no time to
-                   combine and reload - leave it for the next visit. */
+                /* Saved elsewhere first: hold theirs and go again, combined.
+                   On the way out there is no time - the next visit sorts it. */
                 if (opts.leaving) break;
-                if (syncTake(data, false)) combined = true;
+                syncNotice(data);
                 continue;
             }
             if (!r.ok) throw new Error(data.error || ('server said ' + r.status));
-            syncSetMeta({ rev: data.rev, hash: h, lastOk: Date.now(), err: null });
+            if (syncRemote) syncRemote = { rev: data.rev, state: state };
+            else syncSetMeta({ rev: data.rev, hash: bkHash(canon) });
+            syncSetMeta({ lastOk: Date.now(), err: null });
             break;
         }
     } catch (e) {
@@ -6324,26 +6416,27 @@ async function syncPush(opts) {
     } finally {
         syncBusy = false;
     }
-    if (combined) { bkAfterReload('Progress combined with your other device.'); location.reload(); return; }
     syncUI();
     if (syncAgain) { syncAgain = false; syncLater(); }
 }
 
-async function syncPull() {
+async function syncPull(atLoad) {
     const cfg = syncCfg();
     if (!cfg || syncBusy) return;
     syncBusy = true; syncPulledAt = Date.now(); syncUI();
-    let changed = false;
+    let held = false;
     try {
         const data = await syncGet(cfg.id);
-        if ((data.rev || 0) !== (syncMeta().rev || 0)) changed = syncTake(data, false);
+        const known = syncRemote ? syncRemote.rev : (syncMeta().rev || 0);
+        if ((data.rev || 0) !== known) held = syncNotice(data);
         syncSetMeta({ lastOk: Date.now(), err: null });
     } catch (e) {
         syncSetMeta({ err: syncWhy(e) });
     } finally {
         syncBusy = false;
     }
-    if (changed) { bkAfterReload('Progress updated from your other device.'); location.reload(); return; }
+    /* Just opened, nothing on screen is under way yet: simply show it. */
+    if (held && atLoad) { syncApply(); return; }
     await syncPush();                    // anything of this device's not up there yet
     syncUI();
 }
@@ -6409,6 +6502,7 @@ async function syncNow() {
     syncMsg('Syncing…');
     await syncSettle();
     await syncPull();
+    if (syncRemote) { syncApply(); return; }      // asked for it: show it now
     const m = syncMeta();
     syncMsg(m.err ? "Couldn't reach the sync server (" + m.err + ')' : 'Up to date.', m.err ? 'bad' : 'ok');
     syncUI();
@@ -6426,6 +6520,7 @@ async function syncOff(btn) {
     if (syncTimer || syncDirty()) await syncPush();           // send what is waiting first
     localStorage.removeItem(SYNCK.cfg);
     localStorage.removeItem(SYNCK.meta);
+    syncRemote = null;
     clearTimeout(syncTimer); syncTimer = null;
     syncMsg('Sync is off on this device. Your progress stays here.', 'ok');
     syncUI();
@@ -6437,6 +6532,7 @@ function syncUI() {
     let cls = '', text;
     if (!c) text = 'Auto-sync is off';
     else if (syncBusy) { text = 'Saving…'; cls = 'on'; }
+    else if (syncRemote) { text = 'Newer progress · refresh to see it'; cls = 'on'; }
     else if (m.err) { text = m.err === 'offline' ? 'Offline · will sync when back' : 'Sync problem · will retry'; cls = 'err'; }
     else if (m.lastOk) { text = 'Synced · ' + bkWhen(m.lastOk); cls = 'on'; }
     else { text = 'Sync is on'; cls = 'on'; }
@@ -6462,6 +6558,7 @@ function syncUI() {
         const at = bkObj(localStorage.getItem(SYNCK.backup))[BK_QUIZ];
         last.textContent = at ? 'Last backup from this device: ' + bkWhen(at) + '.' : '';
     }
+    syncPromptUI();
 }
 
 function bkOpen(where) {
@@ -6490,16 +6587,24 @@ window.addEventListener('keydown', e => {
 document.addEventListener('visibilitychange', () => {
     if (!syncCfg()) return;
     if (document.visibilityState === 'hidden') { if (syncTimer || syncDirty()) syncPush({ leaving: true }); }
-    else if (Date.now() - syncPulledAt > 15000) syncPull();
+    else syncMaybePull();
 });
 window.addEventListener('pagehide', () => {
     if (syncCfg() && (syncTimer || syncDirty())) syncPush({ leaving: true });
 });
 window.addEventListener('online', () => { if (syncCfg()) syncPull(); });
+/* Coming back: to the window, or to the page after a couple of minutes away. */
+function syncMaybePull() { if (syncCfg() && Date.now() - syncPulledAt > 15000) syncPull(); }
+window.addEventListener('focus', syncMaybePull);
+['pointerdown', 'keydown', 'touchstart'].forEach(t => window.addEventListener(t, () => {
+    const away = Date.now() - syncActiveAt;
+    syncActiveAt = Date.now();
+    if (away > 120000) syncMaybePull();
+}, { capture: true, passive: true }));
 (function () {
     let note = null;
     try { note = sessionStorage.getItem('bk_note'); sessionStorage.removeItem('bk_note'); } catch (e) {}
-    const go = () => { syncUI(); if (note) bkToast(note); if (syncCfg()) syncPull(); };
+    const go = () => { syncUI(); if (note) bkToast(note); if (syncCfg()) syncPull(true); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();
 })();
