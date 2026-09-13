@@ -1288,6 +1288,9 @@ body.hide-lectures .nav-section-label { display: none; }
 body.pad-live:not(.pad-noring) .question-card.pad-focus {
     box-shadow: 0 0 0 2px var(--text-accent), 0 10px 30px rgba(0,0,0,0.25);
 }
+/* Pinned header follows the controller's group of rows rather than a
+   settings row, so the usual divider rule misses it - give it its line. */
+#pad-sub-rows + .settings-row { border-top: 1px solid var(--border-subtle); }
 /* A short word when a controller turns up, so it is obvious it was seen. */
 #pad-toast {
     position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(140%);
@@ -1372,7 +1375,7 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
 /* The same card as the Live score toggle, outlined in a quiet green: the
    theme's own green taken darker, so it sits with the page's muted colours on
    dark themes and stays readable on light ones. */
-.bk-main { display: flex; align-items: center; justify-content: center; width: 100%; padding: .8rem .95rem;
+.bk-main { display: flex; align-items: center; justify-content: center; width: 100%; padding: .6rem .95rem;
     border-radius: 12px; cursor: pointer; font: inherit; text-align: center; background: var(--bg-card);
     border: 1.5px solid #20835f; color: #279e73;
     border-color: color-mix(in srgb, var(--live-dot, #34d399) 62%, #000);
@@ -1381,15 +1384,15 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
 .bk-main:hover { background: var(--bg-card-hover);
     border-color: color-mix(in srgb, var(--live-dot, #34d399) 80%, #000);
     color: color-mix(in srgb, var(--live-dot, #34d399) 90%, #000); }
-.bk-main .bk-title { font-size: .92rem; font-weight: 700; }
+.bk-main .bk-title { font-size: .84rem; font-weight: 700; }
 .bk-note b { color: var(--text-main); }
+/* the note at the top of the panel: set off by the same line, with the same
+   spacing either side of it, as the line between the two sections */
+#bk-overlay .bk-note.bk-intro { margin: 0 0 1.1rem; padding-bottom: 1.15rem; border-bottom: 1px solid var(--border-color); }
 .bk-sync-line { display: flex; align-items: center; gap: 7px; margin: .6rem .15rem 0; padding: 0;
     background: none; border: 0; font: inherit; font-size: .74rem; color: var(--text-muted);
     cursor: pointer; text-align: left; }
 .bk-sync-line:hover .bk-sync-text { color: var(--text-accent); text-decoration: underline; }
-.bk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-color); flex: none; }
-.bk-sync-line.on .bk-dot { background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.18); }
-.bk-sync-line.err .bk-dot { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
 
 #bk-overlay { display: none; position: fixed; inset: 0; z-index: 520;
     background: rgba(0,0,0,.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -1450,6 +1453,20 @@ body.pad-live:not(.pad-noring) .question-card.pad-focus {
     100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
 /* the brief notices move up out of its way */
 body.sync-prompting #pad-toast, body.sync-prompting #bk-toast { bottom: 84px; }
+</style>
+<style id="nav-sticky-style">
+/* The progress block stays at the top of the navigator while its questions
+   scroll beneath it. The sidebar's own top padding moves into the block, so it
+   sits flush against the top edge in every browser, and goes back onto the
+   sidebar whenever the block is hidden. The sidebar colour is see-through, so
+   the block is backed with the page colour: nothing shows through its text. */
+#sidebar { padding-top: 0; }
+#sidebar .nav-summary { position: sticky; top: 0; z-index: 3; padding-top: 1.2rem;
+    background: linear-gradient(var(--bg-sidebar), var(--bg-sidebar)), var(--bg-body); }
+body.tracker-header #sidebar, body.set-review #sidebar { padding-top: 1.2rem; }
+body #sidebar.collapsed { padding: 0; }
+/* a window too short to spare the room: it scrolls away, as before */
+@media (max-height: 520px) { #sidebar .nav-summary { position: static; } }
 </style>
 </head>
 
@@ -1775,9 +1792,9 @@ body.sync-prompting #pad-toast, body.sync-prompting #bk-toast { bottom: 84px; }
                     <div class="bk-block" id="bk-block">
                         <div class="setup-label">Your progress</div>
                         <button class="bk-main" id="bk-open" onclick="bkOpen()" title="Save a backup file, restore one, or sync your progress across devices">
-                            <span class="bk-title">Backup / Restore / Auto-Sync Progress</span>
+                            <span class="bk-title">Auto-Sync / Backup</span>
                         </button>
-                        <button class="bk-sync-line" id="bk-sync-line" onclick="bkOpen('sync')" title="Sync your progress across devices automatically"><span class="bk-dot" aria-hidden="true"></span><span class="bk-sync-text">Auto-sync is off</span></button>
+                        <button class="bk-sync-line" id="bk-sync-line" onclick="bkOpen('sync')" title="Sync your progress across devices automatically"><span class="bk-sync-text">Auto-sync is off</span></button>
                     </div>
                 </div>
                 </div>
@@ -5988,9 +6005,10 @@ padSyncSettings();
             <button class="pad-close" onclick="bkClose()" aria-label="Close">&#10005;</button>
         </div>
         <div class="pad-body">
+            <p class="bk-note bk-intro" id="bk-intro">Since this is a pretty big question bank, I added these options to prevent accidental loss of progress and so you can continue on another device if you want. I hope it helps, and good luck!</p>
             <div class="bk-sec" id="bk-sync">
                 <div class="bk-h">Auto-sync</div>
-                <p class="bk-note" id="sync-about" style="margin-top:0">Turn this on to auto-save as you work. Copy the code to another device to link it and continue your progression.</p>
+                <p class="bk-note" id="sync-about" style="margin-top:0">Turn this on to auto-save as you work. Copy the code to another device to link it and continue your progression. Save this somewhere safe in case you need it for restoring your progress later.</p>
                 <div id="sync-off">
                     <div class="bk-btns" style="margin-top:.8rem">
                         <button class="bk-btn bk-acc" id="sync-create" onclick="syncCreate()">Turn on sync</button>
@@ -6009,7 +6027,6 @@ padSyncSettings();
                         <button class="bk-btn" id="sync-now" onclick="syncNow()">Sync now</button>
                     </div>
                     <p class="bk-note" id="sync-status"></p>
-                    <p class="bk-note" id="sync-keep"><b>Save this code somewhere safe.</b> You'll need it to restore your progress later, or to continue on another device. Keep it private: anyone with it can change your progress.</p>
                     <div class="bk-btns" style="margin-top:.8rem">
                         <button class="bk-btn bk-danger-o" id="sync-off-btn" onclick="syncOff(this)">Turn off on this device</button>
                     </div>
@@ -6017,7 +6034,7 @@ padSyncSettings();
                 <p class="bk-msg" id="sync-msg" role="status"></p>
             </div>
             <div class="bk-sec">
-                <div class="bk-h">Backup file</div>
+                <div class="bk-h">Manual backup file</div>
                 <div class="bk-btns">
                     <button class="bk-btn" id="bk-save" onclick="bkSave()">&#11015; Save backup file</button>
                     <button class="bk-btn" id="bk-restore" onclick="bkPick()">&#11014; Restore from file</button>
@@ -6032,7 +6049,7 @@ padSyncSettings();
                     </div>
                 </div>
                 <p class="bk-msg" id="bk-msg" role="status"></p>
-                <p class="bk-note" id="bk-about">Manually save a small backup file to prevent quiz data from being lost. Unnecessary if you turn on sync and save the code.</p>
+                <p class="bk-note" id="bk-about">Manually saves a small backup file to prevent quiz data from being lost. Unlike the above sync, this doesn't auto-update, so back up regularly if you use this!</p>
             </div>
         </div>
     </div>
@@ -6607,6 +6624,23 @@ window.addEventListener('focus', syncMaybePull);
     const go = () => { syncUI(); if (note) bkToast(note); if (syncCfg()) syncPull(true); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();
+})();
+</script>
+<script id="nav-sticky-script">
+/* Room at the top of the navigator for the pinned progress block, so a
+   question box scrolled into view - by tabbing through them, say - is never
+   left underneath it. */
+(function () {
+    var side = document.getElementById('sidebar');
+    var sum = side && side.querySelector('.nav-summary');
+    if (!side || !sum) return;
+    function fit() {
+        var pinned = sum.offsetHeight > 0 && getComputedStyle(sum).position === 'sticky';
+        side.style.scrollPaddingTop = pinned ? (sum.offsetHeight + 8) + 'px' : '';
+    }
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(sum);
+    window.addEventListener('resize', fit);
+    fit();
 })();
 </script>
 </body>
